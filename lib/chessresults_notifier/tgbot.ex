@@ -22,7 +22,6 @@ defmodule ChessresultsNotifier.Tgbot do
     Logger.info("starting get_updates() polling")
     {:ok, %{username: username}} = Nadia.get_me()
     poller = spawn_link(__MODULE__, :starter, [username])
-
     {:noreply, %{poller: poller, username: username}}
   end
 
@@ -56,30 +55,31 @@ defmodule ChessresultsNotifier.Tgbot do
   end
 
   defp process(%{message: %{text: "/t " <> url, chat: %{id: chat_id}, message_id: message_id}}) do
-    {:ok, _} = ChessresultsNotifier.Monitors.monitor chat_id, url, message_id
+    ChessresultsNotifier.Monitor.monitor chat_id, message_id, url
   end
 
   defp process(%{message: %{text: "/list", chat: %{id: chat_id}, message_id: message_id}}) do
-    msg = case ChessresultsNotifier.Monitors.list do
-      [] -> "no tournaments monitored"
-      monitored ->
+    monitored = ChessresultsNotifier.Monitor.list(chat_id)
+    msg = case Enum.count(monitored) do
+      0 -> "no tournaments monitored"
+      _ ->
         monitored
         |> Enum.map(
           fn {_, %{url: url, last_round: nil, title: title}} ->
             "[#{title}](#{url})";
             {_, %{url: url, last_round: last_round, title: title, last_round_link: link}} ->
               "[#{title}](#{url}) [#{last_round}](#{link})"
-        end)
-        |> Enum.join("\n")
+          end)
+          |> Enum.join("\n")
     end
     Nadia.send_message(chat_id, msg, parse_mode: "Markdown", reply_to_message_id: message_id, disable_web_page_preview: true)
   end
 
-  defp process(%{message: %{text: "/stop all", chat: %{id: chat_id}, message_id: message_id}}) do
-    monitored = ChessresultsNotifier.Monitors.list
-    monitored |> Enum.each(fn {pid, _} -> ChessresultsNotifier.Monitor.stop(pid) end)
-    Nadia.send_message(chat_id, "stopped all", reply_to_message_id: message_id)
-  end
+  # defp process(%{message: %{text: "/stop all", chat: %{id: chat_id}, message_id: message_id}}) do
+  #   monitored = ChessresultsNotifier.Monitors.list
+  #   monitored |> Enum.each(fn {pid, _} -> ChessresultsNotifier.Monitor.stop(pid) end)
+  #   Nadia.send_message(chat_id, "stopped all", reply_to_message_id: message_id)
+  # end
 
   defp process(upd) do
     IO.inspect(upd)

@@ -27,3 +27,4 @@ chessresults_notifier-*.tar
 
 rsync*
 /config/secret.exs
+/storage.term

@@ -5,9 +5,10 @@ defmodule ChessresultsNotifier.Application do
 
   @impl true
   def start(_type, _args) do
+    storage = Application.fetch_env! :chessresults_notifier, :storage
     children = [
       {ChessresultsNotifier.Tgbot, []},
-      {ChessresultsNotifier.Monitors, []}
+      {ChessresultsNotifier.Monitor, storage}
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one)
