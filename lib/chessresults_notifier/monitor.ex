@@ -54,12 +54,12 @@ defmodule ChessresultsNotifier.Monitor do
 
   @impl true
   def init(storage) do
+    :timer.send_interval @period, :check
     case File.exists?(storage) do
       false -> {:ok, %__MODULE__{storage: storage}}
       true ->
         with {:ok, tourneys} <- load(storage) do
           Logger.info "loaded #{inspect tourneys} from #{storage}"
-          :timer.send_interval @period, :check
           send self(), :check
           {:ok, %__MODULE__{storage: storage, tourneys: tourneys}}
         else
@@ -84,10 +84,10 @@ defmodule ChessresultsNotifier.Monitor do
             {id, nil};
           _ ->
             case ChessresultsNotifier.fetch url do
-              {:ok, _title, ^last_round, _link} ->
+              {:ok, %{title: title, round: ^last_round}} ->
                 Logger.debug "no new round detected for #{id}"
-                {id, tourney}
-              {:ok, title, new_last_round, link} ->
+                {id, %{tourney | title: title}}
+              {:ok, %{title: title, round: new_last_round, round_link: link}} ->
                 Logger.debug "new round #{new_last_round} #{link} detected for #{id}"
                 msg = "[#{title}](#{url})\n[#{new_last_round}](#{link})"
                 {msg, new_tourney} =

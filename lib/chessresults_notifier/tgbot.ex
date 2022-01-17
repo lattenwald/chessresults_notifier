@@ -2,6 +2,8 @@ defmodule ChessresultsNotifier.Tgbot do
   use GenServer
   require Logger
 
+  @chessresults_base "https://chess-results.com/"
+
   def start_link(_) do
     Logger.info("starting")
     GenServer.start_link(
@@ -54,7 +56,7 @@ defmodule ChessresultsNotifier.Tgbot do
     Nadia.send_message(chat_id, "chat id: `#{chat_id}`", parse_mode: "Markdown", reply_to_message_id: message_id)
   end
 
-  defp process(%{message: %{text: "/t " <> url, chat: %{id: chat_id}, message_id: message_id}}) do
+  defp process(%{message: %{text: url = "#{@chessresults_base}" <> _, chat: %{id: chat_id}, message_id: message_id}}) do
     ChessresultsNotifier.Monitor.monitor chat_id, message_id, url
   end
 
