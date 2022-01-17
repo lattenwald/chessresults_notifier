@@ -92,7 +92,7 @@ defmodule ChessresultsNotifier.Monitor do
                 msg = "[#{title}](#{url})\n[#{new_last_round}](#{link})"
                 msg = case board do
                   nil -> msg
-                  _ -> msg <> ", plaing board *#{board}* with *#{color}*"
+                  _ -> msg <> ", playing board *#{board}* with *#{color}*"
                 end
 
                 {msg, new_tourney} =
