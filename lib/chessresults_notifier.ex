@@ -27,15 +27,18 @@ defmodule ChessresultsNotifier do
         case Enum.find headers, fn {_,_,["Player info"]} -> true; _ -> false end do
           nil -> nil
           _ ->
-            last_row = Floki.find(document, "table.CRs1:last-child>tr:last-child")
-            [{_,_,[board]}|_] = Floki.find(last_row, "td:nth-child(2)")
-            [{_, attrs, _}|_] = Floki.find(last_row, "table div")
-            color = case List.keyfind(attrs, "class", 0) do
-              nil -> nil
-              {_, "FarbewT"} -> :white
-              {_, "FarbesT"} -> :black
+            case Floki.find(document, "table.CRs1:last-child>tr:last-child") do
+              [] -> {nil, nil}
+              last_row ->
+                [{_,_,[board]}|_] = Floki.find(last_row, "td:nth-child(2)")
+                [{_, attrs, _}|_] = Floki.find(last_row, "table div")
+                color = case List.keyfind(attrs, "class", 0) do
+                  nil -> nil
+                  {_, "FarbewT"} -> :white
+                  {_, "FarbesT"} -> :black
+                end
+                {board, color}
             end
-            {board, color}
         end
     case rounds do
       [] -> {:ok, %__MODULE__{title: title}}
