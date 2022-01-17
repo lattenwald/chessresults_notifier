@@ -87,9 +87,14 @@ defmodule ChessresultsNotifier.Monitor do
               {:ok, %{title: title, round: ^last_round}} ->
                 Logger.debug "no new round detected for #{id}"
                 {id, %{tourney | title: title}}
-              {:ok, %{title: title, round: new_last_round, round_link: link}} ->
+              {:ok, %{title: title, round: new_last_round, round_link: link, board: board, color: color}} ->
                 Logger.debug "new round #{new_last_round} #{link} detected for #{id}"
                 msg = "[#{title}](#{url})\n[#{new_last_round}](#{link})"
+                msg = case board do
+                  nil -> msg
+                  _ -> msg <> ", plaing board *#{board}* with *#{color}*"
+                end
+
                 {msg, new_tourney} =
                   case Regex.match? ~r/(?:Тур|Rd\.)(\d+)\/\1$/, new_last_round do
                     true -> {"#{msg}\nlast round, monitoring stopped", nil}
