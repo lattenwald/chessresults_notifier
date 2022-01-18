@@ -16,7 +16,7 @@ defmodule ChessresultsNotifier.Monitor do
 
   def monitor(chat_id, message_id, url) do
     case Regex.run ~r/\/(tnr\d+)\.aspx/, url, capture: :all_but_first do
-      nil -> notify(chat_id, message_id, "Invalind link")
+      nil -> notify(chat_id, message_id, "Это не ссылка на турнир")
       [id] -> GenServer.cast __MODULE__, {:monitor, id, chat_id, message_id, url}
     end
   end
@@ -90,24 +90,29 @@ defmodule ChessresultsNotifier.Monitor do
               {:ok, %{title: title, round: new_last_round, round_link: link, board: board, color: color}} ->
                 Logger.debug "new round #{new_last_round} #{link} detected for #{id}"
                 msg = "[#{title}](#{url})\n[#{new_last_round}](#{link})"
+                color_ru = case color do
+                  :white -> "*белыми* "
+                  :black -> "*чёрными* "
+                  _ -> ""
+                end
                 msg = case board do
                   nil -> msg
-                  _ -> msg <> ", playing board *#{board}* with *#{color}*"
+                  _ -> msg <> ", играем #{color_ru} на доске *#{board}*"
                 end
 
                 {msg, new_tourney} =
                   case Regex.match? ~r/(?:Тур|Rd\.)(\d+)\/\1$/, new_last_round do
-                    true -> {"#{msg}\nlast round, monitoring stopped", nil}
+                    true -> {"#{msg}\nпоследний тур", nil}
                     false ->
                       {msg, %{tourney | title: title, last_round: new_last_round, last_round_link: link}}
                   end
                 notify |> Enum.each(&notify(&1, msg))
                 {id, new_tourney}
               {:error, %{notify: notify, reason: :nxdomain}} ->
-                notify |> Enum.each(&notify(&1, "Wrong link"))
+                notify |> Enum.each(&notify(&1, "Неверная ссылка?"))
                 {id, nil}
               {:error, other} ->
-                notify |> Enum.each(&notify(&1, "Error `#{inspect other}`"))
+                notify |> Enum.each(&notify(&1, "Ошибка `#{inspect other}`"))
                 {id, nil}
             end
         end
@@ -148,12 +153,12 @@ defmodule ChessresultsNotifier.Monitor do
       case Map.fetch tourneys, id do
         {:ok, stored = %{notify: stored_notify}} ->
           case MapSet.member? stored_notify, notify do
-            true -> notify(chat_id, message_id, "Tournament `#{id}` is already monitored")
-            false -> notify(chat_id, message_id, "Monitoring tournament `#{id}`")
+            true -> notify(chat_id, message_id, "Турнир `#{id}` уже мониторится")
+            false -> notify(chat_id, message_id, "Отслеживаю турнир `#{id}`")
           end
           %{stored | notify: MapSet.put(stored_notify, {chat_id, message_id})}
         :error ->
-          notify(chat_id, message_id, "Monitoring tournament `#{id}`")
+          notify(chat_id, message_id, "Отслеживаю турнир `#{id}`")
           %Tourney{notify: MapSet.new([notify]), url: url}
       end
     new_tourneys = Map.put tourneys, id, tourney
