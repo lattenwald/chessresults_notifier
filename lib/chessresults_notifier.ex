@@ -25,7 +25,7 @@ defmodule ChessresultsNotifier do
       title = String.trim title
       {board, color} =
         case Enum.find headers, fn {_,_,["Player info"]} -> true; _ -> false end do
-          nil -> nil
+          nil -> {nil, nil}
           _ ->
             case Floki.find(document, "table.CRs1:last-child>tr:last-child") do
               [] -> {nil, nil}

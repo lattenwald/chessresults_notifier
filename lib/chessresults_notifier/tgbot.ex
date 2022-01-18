@@ -63,7 +63,7 @@ defmodule ChessresultsNotifier.Tgbot do
   defp process(%{message: %{text: "/list", chat: %{id: chat_id}, message_id: message_id}}) do
     monitored = ChessresultsNotifier.Monitor.list(chat_id)
     msg = case Enum.count(monitored) do
-      0 -> "no tournaments monitored"
+      0 -> "Ничего не мониторится"
       _ ->
         monitored
         |> Enum.map(
@@ -77,11 +77,10 @@ defmodule ChessresultsNotifier.Tgbot do
     Nadia.send_message(chat_id, msg, parse_mode: "Markdown", reply_to_message_id: message_id, disable_web_page_preview: true)
   end
 
-  # defp process(%{message: %{text: "/stop all", chat: %{id: chat_id}, message_id: message_id}}) do
-  #   monitored = ChessresultsNotifier.Monitors.list
-  #   monitored |> Enum.each(fn {pid, _} -> ChessresultsNotifier.Monitor.stop(pid) end)
-  #   Nadia.send_message(chat_id, "stopped all", reply_to_message_id: message_id)
-  # end
+  defp process(%{message: %{text: "/stop", chat: %{id: chat_id}, message_id: message_id}}) do
+    :ok = ChessresultsNotifier.Monitor.unmonitor_all(chat_id)
+    Nadia.send_message(chat_id, "ок", reply_to_message_id: message_id)
+  end
 
   defp process(upd) do
     IO.inspect(upd)
