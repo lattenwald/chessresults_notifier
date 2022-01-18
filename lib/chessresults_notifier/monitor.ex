@@ -68,7 +68,7 @@ defmodule ChessresultsNotifier.Monitor do
           {:ok, %__MODULE__{storage: storage, tourneys: tourneys}}
         else
           {:error, other} ->
-            Logger.error other
+            Logger.error inspect(other)
             {:stop, other}
           other ->
             Logger.error other
