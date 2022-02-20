@@ -91,9 +91,13 @@ defmodule ChessresultsNotifier.Monitor do
               {:ok, %{title: title, round: ^last_round}} ->
                 Logger.debug "no new round detected for #{id}"
                 {id, %{tourney | title: title}}
-              {:ok, %{title: title, round: new_last_round, round_link: link, board: board, color: color}} ->
+              {:ok, %{title: title, round: new_last_round, round_link: link, board: board, color: color, player_name: player_name}} ->
                 Logger.debug "new round #{new_last_round} #{link} detected for #{id}"
                 msg = "[#{title}](#{url})\n[#{new_last_round}](#{link})"
+                plays = case player_name do
+                  nil -> "играем"
+                  _ -> "*#{player_name}* играет"
+                end
                 color_ru = case color do
                   :white -> "*белыми* "
                   :black -> "*чёрными* "
@@ -101,7 +105,7 @@ defmodule ChessresultsNotifier.Monitor do
                 end
                 msg = case board do
                   nil -> msg
-                  _ -> msg <> ", играем #{color_ru} на доске *#{board}*"
+                  _ -> msg <> ", #{plays} #{color_ru} на доске *#{board}*"
                 end
 
                 {msg, new_tourney} =

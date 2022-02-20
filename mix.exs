@@ -27,7 +27,8 @@ defmodule ChessresultsNotifier.MixProject do
       {:floki, "~> 0.32.0"},
       {:nadia, "~> 0.7.0"},
       {:jason, "~> 1.1"},
-      {:toml_config_provider, "~> 0.2.0"}
+      {:toml_config_provider, "~> 0.2.0"},
+      {:rexbug, "~> 1.0"}
     ]
   end
 

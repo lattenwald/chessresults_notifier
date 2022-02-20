@@ -4,7 +4,7 @@ defmodule ChessresultsNotifier do
   Documentation for `ChessresultsNotifier`.
   """
 
-  defstruct [:title, :round, :round_link, :board, :color]
+  defstruct [:title, :round, :round_link, :board, :color, :player_name]
 
   def fetch(url) do
     %{query: query} = URI.parse url
@@ -23,6 +23,10 @@ defmodule ChessresultsNotifier do
          [{_, _, [title]} | _] <- headers
     do
       title = String.trim title
+      player_name = case Floki.find(document, "table.CRs1>tr:first-child") do
+        [{"tr", _, [{"td", _, ["Name"]}, {"td", _, [name]}]} | _] -> String.trim name
+        _ -> nil
+      end
       {board, color} =
         case Enum.find headers, fn {_,_,["Player info"]} -> true; _ -> false end do
           nil -> {nil, nil}
@@ -45,7 +49,7 @@ defmodule ChessresultsNotifier do
       _ ->
         {_, latest_round_data, [latest_round]} = List.last(rounds)
         {_, latest_round_link} = List.keyfind(latest_round_data, "href", 0)
-        {:ok, %__MODULE__{title: title, round: latest_round, round_link: latest_round_link, board: board, color: color}}
+        {:ok, %__MODULE__{title: title, round: latest_round, round_link: latest_round_link, board: board, color: color, player_name: player_name}}
     end
     else
       other = {:error, _} ->
