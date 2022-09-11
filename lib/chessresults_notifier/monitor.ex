@@ -14,9 +14,16 @@ defmodule ChessresultsNotifier.Monitor do
     GenServer.start_link(__MODULE__, storage, name: __MODULE__)
   end
 
-  def monitor(chat_id, message_id, url) do
+  def monitor(chat_id, message_id, url = "https://chess-results.com/" <> _) do
     case Regex.run ~r/\/(tnr\d+)\.aspx/, url, capture: :all_but_first do
       nil -> notify(chat_id, message_id, "Это не ссылка на турнир")
+      [id] -> GenServer.cast __MODULE__, {:monitor, id, chat_id, message_id, url}
+    end
+  end
+
+  def monitor(chat_id, message_id, url = "https://chessresults.ru/" <> _) do
+    case Regex.run ~r/\/ru\/online\/player\/([0-9]+\/[0-9]+)/, url, capture: :all_but_first do
+      nil -> notify(chat_id, message_id, "Это не ссылка на профиль игрока в турнире")
       [id] -> GenServer.cast __MODULE__, {:monitor, id, chat_id, message_id, url}
     end
   end
@@ -91,7 +98,7 @@ defmodule ChessresultsNotifier.Monitor do
               {:ok, %{title: title, round: ^last_round}} ->
                 Logger.debug "no new round detected for #{id}"
                 {id, %{tourney | title: title}}
-              {:ok, %{title: title, round: new_last_round, round_link: link, board: board, color: color, player_name: player_name}} ->
+              {:ok, %{title: title, round: new_last_round, round_link: link, board: board, color: color, player_name: player_name, last_round: round_is_last}} ->
                 Logger.debug "new round #{new_last_round} #{link} detected for #{id}"
                 msg = "[#{title}](#{url})\n[#{new_last_round}](#{link})"
                 plays = case player_name do
@@ -109,10 +116,10 @@ defmodule ChessresultsNotifier.Monitor do
                 end
 
                 {msg, new_tourney} =
-                  case Regex.match? ~r/(?:Тур|Rd\.)(\d+)\/\1$/, new_last_round do
-                    true -> {"#{msg}\nпоследний тур", nil}
-                    false ->
-                      {msg, %{tourney | title: title, last_round: new_last_round, last_round_link: link}}
+                  if round_is_last do
+                    {"#{msg}\nпоследний тур", nil}
+                  else
+                    {msg, %{tourney | title: title, last_round: new_last_round, last_round_link: link}}
                   end
                 notify |> Enum.each(&notify(&1, msg))
                 {id, new_tourney}
