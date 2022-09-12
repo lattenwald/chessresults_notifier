@@ -1,2 +1,3 @@
 #!/bin/sh
-docker build -t chessresults_notifier .
+docker pull elixir:alpine
+docker build --network host -t chessresults_notifier .

@@ -32,6 +32,10 @@ defmodule ChessresultsNotifier.Monitor do
     GenServer.call __MODULE__, {:unmonitor_all, chat_id}
   end
 
+  def unmonitor(chat_id, tourney_id) do
+    GenServer.call __MODULE__, {:unmonitor, chat_id, tourney_id}
+  end
+
   def info() do
     GenServer.call __MODULE__, :info
   end
@@ -167,6 +171,21 @@ defmodule ChessresultsNotifier.Monitor do
                      fn {id, data = %{notify: notify}} ->
                        new_notify = notify |> Enum.filter(fn{^chat_id, _} -> false; _ -> true end)
                        {id, %{data | notify: new_notify}}
+                     end
+                   )
+                   |> Enum.into(%{})
+    store new_tourneys, storage
+    {:reply, :ok, %{state | tourneys: new_tourneys}}
+  end
+
+  def handle_call({:unmonitor, chat_id, tourney_id}, _from, state = %{storage: storage, tourneys: tourneys}) do
+    new_tourneys = tourneys
+                   |> Enum.map(
+                     fn {^tourney_id, data = %{notify: notify}} ->
+                       new_notify = notify |> Enum.filter(fn{^chat_id, _} -> false; _ -> true end)
+                       {tourney_id, %{data | notify: new_notify}}
+                       other ->
+                         other
                      end
                    )
                    |> Enum.into(%{})
